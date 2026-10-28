@@ -1,42 +1,68 @@
-/* Extend topic objects with progress, notes, questions, difficulty, or duration without changing the UI architecture. */
-const rows = [
-['fundamentals','◈','Programming Fundamentals','Core building blocks behind every reliable program.','Variables|Data Types|Operators|Control Flow|Methods|Parameters|Return Values|Arrays|Collections Basics','Recursion|Method Overloading|Named Parameters|Optional Parameters','Algorithmic Complexity|Memory Basics'],
-['oop','⬡','Object-Oriented Programming','Model software with clear responsibilities and boundaries.','Classes|Objects|Constructors|Encapsulation|Inheritance|Polymorphism|Abstraction','Interfaces|Abstract Classes|Composition|Coupling & Cohesion|SOLID','Domain Modeling|Object Calisthenics'],
-['csharp','⌘','C#','Master the language from everyday features to runtime-aware code.','Value Types|Reference Types|Stack vs Heap|Exception Handling|String vs StringBuilder|Generics|Delegates|Events|Lambda Expressions|LINQ|Extension Methods','Boxing|Unboxing|Anonymous Types|Records|Pattern Matching|IDisposable|Reflection|Attributes|Expression Trees','Span<T>|Memory<T>|Source Generators|Native AOT|Unsafe Code'],
-['clr','⚙','CLR & Runtime','Understand what happens beneath your C# source code.','CLR|CTS|CLS|Assemblies|Metadata|IL|JIT','Garbage Collection|GC Generations|LOH|Finalizers','Tiered Compilation|Runtime Diagnostics'],
-['async','↻','Multithreading & Async','Build responsive, safe, concurrent applications.','Thread|Task|async/await|Thread Pool|CancellationToken','ConfigureAwait|lock|SemaphoreSlim|Concurrent Collections|Parallel.ForEach','Channels|Race Conditions|Deadlock Diagnosis'],
-['aspnet','◉','ASP.NET Core','Build maintainable, production-ready web applications.','Middleware|Routing|Controllers|Model Binding|Validation|Configuration|Dependency Injection|Logging','Filters|Hosted Services|Background Services|Health Checks|Caching|Rate Limiting|API Versioning','Endpoint Filters|Minimal APIs|Output Caching'],
-['rest','⇄','Web APIs (REST)','Design predictable, useful HTTP APIs.','REST Constraints|HTTP Methods|Status Codes|CRUD|Content Negotiation|Swagger|OpenAPI','Idempotency|Pagination|Versioning|File Upload|Streaming','HATEOAS|Resilience Contracts'],
-['security','◌','Authentication & Security','Protect identities, data, and application boundaries.','Authentication|Authorization|JWT|Claims|Policies|Cookies|Sessions|CORS|HTTPS','OAuth2|OpenID Connect|Refresh Tokens|Cognito|CSRF|XSS|SQL Injection','Certificate Authentication|mTLS|Threat Modeling'],
-['efcore','▤','Entity Framework Core','Work effectively with relational data through EF Core.','DbContext|DbSet|CRUD|Migrations|Change Tracker','AsNoTracking|Lazy Loading|Eager Loading|Transactions|Compiled Queries','Interceptors|Concurrency Tokens|Query Diagnostics'],
-['dapper','▥','Dapper & ADO.NET','Use direct database access with precision.','SqlConnection|SqlCommand|Parameters|Execute|Query','Multi Mapping|GridReader|Stored Procedures|Transactions','Connection Resiliency|Bulk Operations'],
-['sqlserver','▦','SQL Server','Query and tune Microsoft SQL Server confidently.','Joins|Indexes|Transactions|CTE|Window Functions','Execution Plans|Deadlocks|Isolation Levels|Locking|Blocking|Recursive CTE','Parameter Sniffing|Query Store|Partitioning|Columnstore'],
-['postgres','◫','PostgreSQL','Use the open-source relational database effectively.','Data Types|Joins|Indexes|Transactions|EXPLAIN','JSONB|CTEs|Window Functions|VACUUM|Isolation Levels','Partitioning|Full Text Search|Replication'],
-['angular','△','Angular','Build structured, reactive front-end applications.','Components|Templates|Data Binding|Routing|Services|Dependency Injection','RxJS|Observables|Subjects|BehaviorSubject|Interceptors|Guards|Reactive Forms|Change Detection','Signals|Standalone Components|NgRx|SSR'],
-['html','<>','HTML','Create accessible, semantic document structure.','Semantic HTML|Headings|Forms|Links|Images|Tables','Accessibility|ARIA|Form Validation','Web Components|Performance Hints'],
-['css','✦','CSS','Build polished, adaptive user interfaces.','Selectors|Box Model|Typography|Colors|Flexbox|Grid','Responsive Design|Custom Properties|Transitions|Animations','Container Queries|Cascade Layers|Rendering Performance'],
-['javascript','JS','JavaScript','Understand the browser language at a deep level.','Variables|Functions|Objects|Arrays|DOM|Events|Fetch|Promises','Closures|this|Prototypes|Event Loop|Modules|Error Handling','Web Workers|Performance Profiling|Memory Leaks'],
-['typescript','TS','TypeScript','Make JavaScript codebases safer at scale.','Types|Interfaces|Functions|Generics|Enums|Narrowing','Utility Types|Mapped Types|Conditional Types|Decorators','Compiler API|Advanced Inference'],
-['aws','☁','AWS','Deploy and operate services on AWS.','EC2|IAM|S3|RDS|Lambda|VPC|CloudWatch','ALB|Cognito|Secrets Manager|ElastiCache|Amazon MQ|EventBridge|ECS','EKS|CloudFormation|CDK|Well-Architected Framework'],
-['redis','▰','Redis','Use in-memory data structures for speed.','Keys|Strings|Hashes|Lists|Expiration','Caching Patterns|Pub/Sub|Transactions|Sorted Sets','Redis Cluster|Streams|Distributed Locks'],
-['rabbitmq','✉','RabbitMQ & Messaging','Build dependable asynchronous integrations.','Queues|Exchanges|Routing Keys|Ack/Nack','Retry|Dead Letter Queue|Prefetch|Publisher Confirms','Idempotent Consumers|Ordering|Poison Message Handling'],
-['networking','⌁','Networking','Reason about connections from DNS to HTTP/3.','OSI Model|TCP|UDP|DNS|HTTP|HTTPS|TLS Handshake|Certificates','Load Balancer|Reverse Proxy|Connection Pooling|Keep Alive|HTTP/2','HTTP/3|QUIC|Packet Analysis'],
-['soap','▧','SOAP & WCF','Maintain and integrate enterprise SOAP systems.','XML|SOAP|WSDL|Contracts','Bindings|SOAP Headers|Message Security','WS-* Standards|Custom Behaviors'],
-['patterns','◇','Design Patterns','Use proven structures without overengineering.','Factory|Strategy|Builder|Adapter|Decorator|Observer','Mediator|Repository Pattern|Unit of Work|Specification','CQRS|Outbox Pattern'],
-['solid','≋','SOLID Principles','Design code that is easy to change.','Single Responsibility|Open/Closed|Liskov Substitution','Interface Segregation|Dependency Inversion','Tradeoffs & Refactoring'],
-['cleanarch','▱','Clean Architecture','Organize systems around business rules.','Layers|Dependency Rule|Use Cases|Entities','Ports & Adapters|Boundaries|Repository Abstractions','Modular Monolith|Evolutionary Architecture'],
-['microservices','◌','Microservices','Design distributed systems deliberately.','Service Boundaries|API Gateway|Synchronous Communication','Saga|Circuit Breaker|Retry Pattern|Event-Driven Architecture','Service Mesh|Distributed Tracing|Data Ownership'],
-['docker','▣','Docker','Package applications consistently.','Images|Containers|Dockerfile|Volumes|Networks','Docker Compose|Multi-stage Builds|Environment Variables','Image Security|Container Orchestration'],
-['git','⌥','Git','Collaborate safely through version control.','Repository|Commit|Branch|Merge|Remote','Rebase|Pull Requests|Conflict Resolution|Tags','Git Hooks|Bisect|Release Strategy'],
-['cicd','↗','CI/CD','Deliver software safely and repeatably.','Build Pipeline|Test Pipeline|Artifacts|Environment Variables','Deployment Strategies|Infrastructure as Code|Approvals|Rollback','Progressive Delivery|Supply Chain Security'],
-['testing','✓','Unit Testing','Prove behavior with fast, trustworthy tests.','Test Pyramid|Arrange Act Assert|NUnit|xUnit|Moq','Integration Testing|Test Data|Mocking Tradeoffs','Contract Testing|Mutation Testing|BenchmarkDotNet'],
-['monitoring','◔','Logging & Monitoring','Make running systems observable.','Structured Logging|Log Levels|Metrics|Health Checks','OpenTelemetry|Tracing|Prometheus|Grafana','Alert Design|SLOs|Incident Response'],
-['performance','↯','Performance Optimization','Find and remove real bottlenecks.','Big O|Profiling|Indexes|Caching|Allocation Basics','Execution Plans|Load Testing|Connection Pooling|Async I/O','Benchmarking|Flame Graphs|Capacity Planning'],
-['systemdesign','⌘','System Design','Design services that meet real-world constraints.','Requirements|Capacity Estimation|Data Modeling|Caching','Scalability|Horizontal vs Vertical Scaling|High Availability|Load Balancing','Consistency Models|Disaster Recovery|Tradeoff Communication'],
-['principles','⊞','Design Principles','Choose simplicity and clarity by default.','DRY|KISS|YAGNI|Separation of Concerns','Law of Demeter|Composition over Inheritance','Architecture Decision Records'],
-['caching','▤','Caching','Reduce latency without compromising correctness.','Cache-Aside|Expiration|Cache Keys|In-Memory Cache','Distributed Caching|Invalidation|Redis','Stampede Prevention|Multi-level Caching'],
-['serialization','{}','Serialization','Move data safely between system boundaries.','JSON|XML|Serialization|Deserialization','System.Text.Json|Custom Converters|Schema Validation','Versioning|Secure Deserialization'],
-['di','⇢','Dependency Injection','Wire dependencies cleanly and testably.','Service Lifetimes|Constructor Injection|Service Registration','Factory Registration|Options Pattern|Scoped Dependencies','Composition Root|Diagnostics'],
-['secrets','⚿','Configuration & Secrets','Manage environment-specific configuration safely.','appsettings|Environment Variables|Options Pattern','User Secrets|Secrets Manager|Configuration Providers','Secret Rotation|Key Management|Zero Trust']
-];
-const ROADMAP = rows.map(([id,icon,title,description,f,a,e])=>({id,icon,title,description,levels:[[f,'foundation','Foundation','green'],[a,'advanced','Interview Ready','orange'],[e,'expert','Expert Edge','blue']].map(([topics,levelId,levelTitle,color])=>({id:levelId,title:levelTitle,color,topics:topics.split('|').map((title,i)=>({id:`${id}-${levelId}-${i}`,title}))}))}));
+/* Data only: every item maps to an existing Markdown document. */
+const TOPIC_FILES={"csharp":"abstract-classes|abstraction|anonymous-methods|anonymous-types|arrays|async-await|attributes|boxing-and-unboxing|cancellationtoken|classes|collections-overview|composition-vs-inheritance|concurrent-collections|constants-and-readonly|constructors|control-flow|custom-exceptions|data-types|delegates|dictionary|disposable-and-using|dynamic|encapsulation|enums|events|exception-handling|expression-trees|extension-methods|fields|file-io|garbage-collection|generics|hashset|ienumerable|ienumerator|inheritance|interfaces|iqueryable|lambda-expressions|linkedlist|linq|list|local-functions|lock|memorypool|methods|nullable-reference-types|null-handling|objects|operators|parameter-passing|pattern-matching|polymorphism|properties|queue|records|record-structs|reflection|serialization|solid-principles|source-generators|span-and-memory|stack|stack-vs-heap|streams|stringbuilder|strings|structs|system-text-json|task|threading|threadpool|tuples|type-conversion|unsafe-code|valuetask|value-types-vs-reference-types|variables","dotnet":"assemblies|build-process|clr|configuration|dotnet-architecture|il|jit-compiler|metadata|native-aot|nuget|project-sdk|publish-process|runtime-loading","aspnet-core":"api-versioning|authentication|authorization|background-services|caching|configuration|cookies|cors|dependency-injection|exception-handling|file-upload|filters|global-error-handling|grpc|health-checks|hosted-services|jwt|kestrel|logging|middleware|minimal-apis|model-binding|openapi-swagger|options-pattern|problem-details|rate-limiting|request-pipeline|routing|signalr|versioning|web-api|websockets","entity-framework":"bulk-operations|change-tracker|compiled-queries|concurrency|dapper-vs-ef-core|dbcontext|ef-core-overview|entity-configuration|loading-data|migrations|query-performance|relationships|repositories|transactions","sql":"clustered-vs-nonclustered|cte|deadlocks|group-by|indexes|index-fragmentation|isolation-levels|joins|locking|normalization|pagination|performance-tuning|query-execution-plan|stored-procedures|transactions|window-functions","angular":"angular-architecture|change-detection|components|dependency-injection|forms|guards|http-client|interceptors|modules|observables|routing|rxjs|services|signals|state-management","aws":"alb|api-gateway|cloudformation|cloudwatch|ec2|ecs|eks|elasticache|iam|lambda|rds|s3|secrets-manager|sns|sqs|vpc","design-patterns":"adapter|builder|decorator|facade|factory|mediator|observer|repository|singleton|strategy|unit-of-work","system-design":"api-gateway|caching|circuit-breaker|cqrs|distributed-transactions|event-sourcing|kafka|load-balancer|message-queues|microservices|monolith-vs-microservices|rabbitmq|retry-pattern|saga-pattern|scalability","interview":"behavioral-questions|coding-questions|debugging-scenarios|hr-questions|project-discussions|system-design-case-studies"};
+const TOPIC_LEVELS={
+    csharp:{
+        "Basic":"abstract-classes|abstraction|anonymous-methods|anonymous-types|arrays|classes|collections-overview|constants-and-readonly|constructors|control-flow|data-types|delegates|dictionary|encapsulation|enums|events|exception-handling|extension-methods|fields|interfaces|linkedlist|list|methods|objects|operators|parameter-passing|polymorphism|properties|queue|strings|structs|tuples|type-conversion|value-types-vs-reference-types|variables",
+        "Intermediate":"async-await|attributes|boxing-and-unboxing|cancellationtoken|composition-vs-inheritance|custom-exceptions|disposable-and-using|dynamic|file-io|generics|hashset|ienumerable|ienumerator|inheritance|iqueryable|lambda-expressions|linq|local-functions|lock|nullable-reference-types|null-handling|pattern-matching|records|record-structs|serialization|solid-principles|stack|stack-vs-heap|streams|stringbuilder|system-text-json|task|threading|threadpool|valuetask",
+        "Advanced":"concurrent-collections|expression-trees|garbage-collection|memorypool|reflection|source-generators|span-and-memory|unsafe-code"
+    },
+    dotnet:{
+        "Basic":"assemblies|clr|configuration|dotnet-architecture|nuget|project-sdk",
+        "Intermediate":"build-process|il|jit-compiler|metadata|publish-process",
+        "Advanced":"native-aot|runtime-loading"
+    },
+    "aspnet-core":{
+        "Basic":"configuration|dependency-injection|exception-handling|logging|middleware|model-binding|options-pattern|request-pipeline|routing|web-api",
+        "Intermediate":"api-versioning|authentication|authorization|background-services|caching|cookies|cors|file-upload|filters|health-checks|hosted-services|jwt|minimal-apis|openapi-swagger|problem-details|rate-limiting|versioning",
+        "Advanced":"global-error-handling|grpc|kestrel|signalr|websockets"
+    },
+    "entity-framework":{
+        "Basic":"dbcontext|ef-core-overview|entity-configuration|loading-data|migrations|relationships",
+        "Intermediate":"change-tracker|concurrency|dapper-vs-ef-core|query-performance|repositories|transactions",
+        "Advanced":"bulk-operations|compiled-queries"
+    },
+    sql:{
+        "Basic":"group-by|joins|normalization",
+        "Intermediate":"clustered-vs-nonclustered|cte|indexes|pagination|stored-procedures|transactions|window-functions",
+        "Advanced":"deadlocks|index-fragmentation|isolation-levels|locking|performance-tuning|query-execution-plan"
+    },
+    angular:{
+        "Basic":"components|dependency-injection|forms|modules|routing|services",
+        "Intermediate":"angular-architecture|guards|http-client|interceptors|observables|rxjs|signals",
+        "Advanced":"change-detection|state-management"
+    },
+    aws:{
+        "Basic":"cloudwatch|ec2|iam|lambda|rds|s3|sns|sqs|vpc",
+        "Intermediate":"alb|api-gateway|cloudformation|ecs|elasticache|secrets-manager",
+        "Advanced":"eks"
+    },
+    "design-patterns":{
+        "Basic":"adapter|builder|facade|factory|singleton",
+        "Intermediate":"decorator|observer|repository|strategy|unit-of-work",
+        "Advanced":"mediator"
+    },
+    "system-design":{
+        "Basic":"caching|load-balancer|microservices|monolith-vs-microservices|scalability",
+        "Intermediate":"api-gateway|circuit-breaker|kafka|message-queues|rabbitmq|retry-pattern",
+        "Advanced":"cqrs|distributed-transactions|event-sourcing|saga-pattern"
+    },
+    interview:{
+        "Basic":"behavioral-questions|hr-questions|project-discussions",
+        "Intermediate":"coding-questions|debugging-scenarios",
+        "Advanced":"system-design-case-studies"
+    }
+};
+const META={"csharp":["C#","Language features, runtime behavior, and coding decisions.","⌘","★★★☆☆"],"dotnet":[".NET Runtime","Build, load, publish, and diagnose managed applications.","⚙","★★★★☆"],"aspnet-core":["ASP.NET Core","Build secure, observable web services.","◉","★★★★☆"],"entity-framework":["Entity Framework Core","Model, query, and persist relational data deliberately.","▤","★★★★☆"],"sql":["SQL","Write correct queries and reason about database behavior.","▦","★★★☆☆"],"angular":["Angular","Build structured, reactive client applications.","△","★★★☆☆"],"aws":["AWS","Deploy and operate services on AWS.","☁","★★★★☆"],"design-patterns":["Design Patterns","Use patterns where they clarify tradeoffs.","◇","★★★☆☆"],"system-design":["System Design","Design reliable distributed systems with explicit tradeoffs.","⌘","★★★★★"],"interview":["Interview Practice","Prepare concise, evidence-based interview answers.","✓","★★★☆☆"]};
+const acronyms={api:"API",aws:"AWS",clr:"CLR",cte:"CTE",ef:"EF",grpc:"gRPC",iam:"IAM",il:"IL",jit:"JIT",jwt:"JWT",linq:"LINQ",nuget:"NuGet",rxjs:"RxJS",s3:"S3",sns:"SNS",sqs:"SQS",sql:"SQL",vpc:"VPC"};
+const titleFromFile=file=>file.split("-").map(p=>acronyms[p]||p[0].toUpperCase()+p.slice(1)).join(" ");
+const readingTime=file=>`${Math.max(3,Math.min(15,Math.ceil((file.length*28+350)/200)))} min`;
+const ROADMAP=Object.entries(TOPIC_FILES).map(([id,files])=>{
+    const [title,description,icon,difficulty]=META[id];
+    const levels=TOPIC_LEVELS[id];
+    const topicLevels=new Map(Object.entries(levels).flatMap(([level,items])=>items.split("|").map(file=>[file,level])));
+    const filenames=files.split("|");
+    const unclassified=filenames.filter(file=>!topicLevels.has(file));
+    const unknown=[...topicLevels.keys()].filter(file=>!filenames.includes(file));
+    if(unclassified.length||unknown.length) throw new Error(`Topic levels for "${id}" do not match its topic list.`);
+    return{id,title,description,icon,topics:filenames.map(file=>({title:titleFromFile(file),path:`topics/${id}/${file}.md`,difficulty,level:topicLevels.get(file),readingTime:readingTime(file)}))};
+});

@@ -1,0 +1,57 @@
+# Amazon EKS
+
+Amazon Elastic Kubernetes Service (EKS) is AWS’s managed Kubernetes service. AWS operates the Kubernetes control plane, while the customer configures the cluster, worker capacity, add-ons, access, networking, workload manifests, and day-to-day application operations. EKS is a reasonable choice when a team needs Kubernetes APIs, ecosystem tools, a shared platform for varied workloads, or a specific portability model. It is not automatically simpler or more portable than every alternative: cloud integrations, storage classes, identity, ingress, and operational practices can still be provider-specific.
+
+## Cluster architecture and workload flow
+
+Kubernetes control-plane components provide the API and reconcile declared desired state. They are managed by AWS, but application availability remains the customer’s responsibility. Pods run on worker capacity, usually EC2 nodes or supported Fargate profiles. Managed node groups simplify provisioning and lifecycle of EC2 node fleets; they do not choose safe application resource requests or replace cluster upgrade planning. Fargate avoids direct node management for supported pods, but has workload, networking, and feature constraints. Self-managed nodes offer additional control at the cost of more maintenance.
+
+Plan VPC and subnet layout before creating a cluster. Pod and service networking consume address space and can be affected by ENI/IP limits, subnet exhaustion, and routing. EKS cluster endpoint access and worker access need an explicit public/private design; restrict the Kubernetes API endpoint to appropriate networks and identities. Private nodes still require a path to image registries, AWS APIs, and external services. VPC endpoints can reduce public egress dependency for supported services, while NAT adds cost and an AZ-level design decision.
+
+Deployments, ReplicaSets, Pods, Services, and Ingress/Gateway resources express workload and networking intent. AWS Load Balancer Controller can provision or integrate ALBs/NLBs based on supported Kubernetes resources and configuration. It requires IAM permissions, health-check behavior, subnet discovery, and lifecycle ownership to be configured correctly. A Kubernetes Service is not the same thing as an AWS load balancer. Cluster DNS, service discovery, ingress controllers, and external DNS each solve different parts of name resolution and routing.
+
+## Scheduling, scaling, and releases
+
+Kubernetes schedules pods using resource requests, node capacity, affinity/anti-affinity, topology spread, taints, and tolerations. Requests affect placement and capacity planning; limits constrain runtime consumption in ways that can throttle CPU or terminate memory-heavy processes. Set them using observed usage and load tests. Over-requesting wastes cluster capacity; under-requesting leads to contention, unstable latency, and eviction. A Pending pod may signal insufficient resources, an incompatible node selector, missing storage, or a scheduling policy issue—not simply an application bug.
+
+Horizontal Pod Autoscaler adjusts replica count based on configured metrics, while node autoscaling must supply compatible worker capacity. These layers need to work together: adding replicas without node capacity leaves pods Pending; adding nodes without a meaningful workload signal can waste money. Startup time, image pulls, IP allocation, and downstream limits mean autoscaling is not instantaneous. Keep a safe baseline and set scale limits. For event consumers, use backlog and processing behavior rather than CPU alone.
+
+Use rolling deployment settings and readiness probes so new pods receive traffic only when able to serve. Liveness probes should identify a process that cannot recover, not restart a pod for every temporary dependency issue. A failing liveness check can amplify a downstream outage by restarting healthy processes. Pod disruption budgets influence voluntary disruption but do not protect against every failure, such as a zone outage or node crash. Spread replicas across nodes and AZs where the workload and cluster capacity allow; test disruption and recovery explicitly.
+
+Kubernetes versions have support windows and upgrade sequencing. Review EKS version compatibility, node AMIs, control-plane add-ons, networking, DNS, storage drivers, and admission components together. Upgrade a nonproduction cluster, validate critical workloads and APIs, then promote using a documented sequence. A healthy managed control plane does not imply that worker nodes, CNI, CoreDNS, or applications are healthy.
+
+## IAM, cluster security, and observability
+
+There are two authorization planes: AWS IAM controls access to AWS APIs and cluster authentication integration, while Kubernetes RBAC controls Kubernetes objects and actions. Carefully scope both. Use EKS Pod Identity or IAM roles for service accounts (IRSA) where appropriate and configured so a workload receives its own IAM role. Avoid granting application access through a broad node role; otherwise a compromised pod may inherit permissions intended for unrelated workloads. Restrict who can create privileged pods, bind roles, use host namespaces, or pass IAM roles. Kubernetes API access, namespace boundaries, and RBAC bindings deserve production access review.
+
+Use network policies where the selected networking implementation supports them and security groups or other network controls for relevant boundaries. Run images from trusted registries, pin versions/digests, scan dependencies and base images, and patch nodes. Kubernetes Secrets are not automatically a comprehensive secret-management solution; consider a managed secret store and a controlled CSI or application retrieval pattern. Encrypt sensitive data at rest and in transit according to requirements, and avoid exposing secrets through environment variables, logs, or diagnostics.
+
+Collect control-plane audit logs as needed and monitor pod restarts, node readiness, scheduling failures, API errors, resource pressure, ingress health, and user-facing SLOs. Metrics and logs need a deliberate collection pipeline, retention, access policy, and budget. Include cluster, namespace, workload, and deployment revision in telemetry while avoiding unbounded labels such as request IDs. Correlate traces across ingress, .NET services, queues, and databases. Define alert ownership; alerts on every transient pod restart without service context tend to become noise.
+
+Frequent production failures include exhausted pod IPs, misconfigured security-group rules, missing image-pull permissions, insufficient capacity, bad resource requests, incompatible add-ons, DNS failures, broken readiness checks, and overly broad RBAC. Establish runbooks and test recovery from node replacement, failed rollout, and dependency outage. Keep cluster add-ons and custom controllers minimal: every component has an image, permissions, upgrade path, and failure mode to own.
+
+## .NET application considerations and tradeoffs
+
+Package .NET applications as containers with a supported runtime and a predictable startup command. Bind Kestrel to the expected container interface and port. Configure readiness, liveness, and startup probes based on actual startup and recovery behavior. Handle SIGTERM and use a bounded graceful-shutdown period that works with pod termination grace, load-balancer deregistration, and in-flight request handling. Ensure background consumers stop polling before termination and do not acknowledge work that has not been durably processed.
+
+Profile under the same CPU/memory constraints and runtime settings used in the cluster. Garbage collection, thread-pool behavior, and startup can differ under container limits. Expose useful metrics and health endpoints without making them costly or overly dependent on a single shared database. Use workload identity with the AWS SDK credential chain and keep permissions out of node-wide credentials. .NET services should use resilient HTTP/database clients with bounded timeouts and concurrency; Kubernetes restarts are not a substitute for application-level resilience.
+
+EKS has a meaningful fixed and variable operating cost: the cluster control plane, worker compute or Fargate, load balancers, storage, network traffic, logging, and platform engineering labor. Shared clusters can improve utilization but increase tenancy and blast-radius considerations. Separate clusters can strengthen isolation but multiply upgrade and operations work. ECS is often simpler for AWS-native container services without Kubernetes requirements. In an interview, state the requirement that justifies Kubernetes, describe who owns the control plane versus nodes and workloads, explain workload IAM, and identify how scheduling, ingress, and upgrades are operated. “Kubernetes is portable” is not a sufficient reason by itself.
+
+## Platform operations and incident patterns
+
+Define cluster ownership before onboarding application teams. A platform team may own cluster versions, networking, node pools, admission controls, and shared add-ons, while service teams own namespaces, deployment manifests, and service objectives. This division needs a documented escalation path: a failed workload may originate in an application image, a namespace policy, an IAM mapping, a cluster add-on, or an exhausted subnet. Use infrastructure-as-code and reviewed change processes for cluster-level configuration, and record the versions of the control plane, node AMIs, CNI, CoreDNS, storage drivers, and controllers.
+
+Separate environments using accounts/clusters where isolation requirements justify it; namespace boundaries alone are not a hard security boundary for all threat models. Set resource quotas and limit ranges to prevent one team from consuming all cluster capacity, and restrict privileged pod capabilities. Use admission controls or policy-as-code to enforce approved images, non-root execution, resource requests, and security settings. Exceptions should be explicit, owned, and time-limited.
+
+Incident diagnosis should follow the workload path: verify the Deployment desired/current/available replicas; inspect pod events and scheduling state; check node readiness, allocatable resources, taints, and topology; confirm image pull and service account permissions; then inspect Service selectors, EndpointSlices, DNS, ingress controller and AWS load-balancer targets. For network issues, check pod IP allocation, security groups, route tables, and DNS rather than restarting pods blindly. A restart can temporarily clear symptoms while masking the underlying issue.
+
+Use disruption testing to verify zone distribution and dependency behavior. Pod disruption budgets and rolling update settings can preserve minimum capacity during planned maintenance, but cannot ensure capacity during correlated failures. A node group can be healthy while the pod is unschedulable due to a mismatch between requests, affinity, and available node types. A control-plane upgrade can succeed while an incompatible custom controller breaks workload provisioning, so validate the whole platform, not only the version change.
+
+## Related Topics
+
+- [ECS](ecs.md)
+- [VPC](vpc.md)
+- [IAM](iam.md)
+- [ALB](alb.md)
+- [CloudWatch](cloudwatch.md)

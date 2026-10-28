@@ -1,1 +1,103 @@
-(()=>{const grid=document.querySelector('#roadmap'),stats=document.querySelector('#stats');let open=null;const count=c=>c.levels.reduce((n,l)=>n+l.topics.length,0),total=ROADMAP.reduce((n,c)=>n+count(c),0);stats.innerHTML=[[ROADMAP.length,'Categories'],[total,'Topics'],[3,'Learning levels']].map(x=>`<div class="stat"><strong>${x[0]}</strong><span>${x[1]}</span></div>`).join('');const level=l=>`<section class="level ${l.color}"><div class="level-title"><i></i><h3>${l.title}</h3><small>${l.topics.length} topics</small></div><div class="chips">${l.topics.map(t=>`<span class="chip">${t.title}</span>`).join('')}</div></section>`;const render=()=>grid.innerHTML=ROADMAP.map(c=>{const isOpen=open===c.id;return `<article class="item ${isOpen?'open':''}"><button class="card" data-id="${c.id}" aria-expanded="${isOpen}"><b class="icon">${c.icon}</b><span class="copy"><strong>${c.title}</strong><small>${c.description}</small></span><span class="footer"><span>${count(c)} topics</span><em>${isOpen?'Close':'Click to explore'} <b>⌄</b></em></span></button>${isOpen?`<div class="accordion"><div class="details">${c.levels.map(level).join('')}</div></div>`:''}</article>`}).join('');grid.addEventListener('click',e=>{const b=e.target.closest('[data-id]');if(!b)return;open=open===b.dataset.id?null:b.dataset.id;render()});render()})();
+(() => {
+    const grid = document.querySelector("#roadmap");
+    const stats = document.querySelector("#stats");
+    const levels = ["Basic", "Intermediate", "Advanced"];
+    let openCategory = null;
+    let activeTopic = null;
+
+    const topics = () => ROADMAP.flatMap(category =>
+        category.topics.map(topic => ({ ...topic, categoryId: category.id }))
+    );
+
+    const findTopic = path => topics().find(topic => topic.path === path);
+
+    const render = () => {
+        const allTopics = topics();
+        stats.innerHTML = [
+            [ROADMAP.length, "Categories"],
+            [allTopics.length, "Topics"],
+            ["Static", "GitHub Pages"]
+        ].map(([value, label]) =>
+            `<div class="stat"><strong>${value}</strong><span>${label}</span></div>`
+        ).join("");
+
+        grid.innerHTML = ROADMAP.map(category => {
+            const isOpen = openCategory === category.id;
+            return `
+                <article class="item ${isOpen ? "open" : ""}">
+                    <button class="card" data-category="${category.id}" aria-expanded="${isOpen}" type="button">
+                        <b class="icon">${category.icon}</b>
+                        <span class="copy">
+                            <strong>${category.title}</strong>
+                            <small>${category.description}</small>
+                        </span>
+                        <span class="footer">
+                            <span>${category.topics.length} topics</span>
+                            <em>${isOpen ? "Close" : "Explore"} <b>⌄</b></em>
+                        </span>
+                    </button>
+                    ${isOpen ? `
+                        <div class="accordion">
+                            <div class="topic-list">
+                                ${levels.map(level => {
+                                    const levelTopics = category.topics.filter(topic => topic.level === level);
+                                    if (!levelTopics.length) {
+                                        return "";
+                                    }
+                                    return `
+                                        <section class="level-group" aria-labelledby="${category.id}-${level.toLowerCase()}">
+                                            <h3 class="level-heading ${level.toLowerCase()}" id="${category.id}-${level.toLowerCase()}">
+                                                <span>${level}</span>
+                                                <small>${levelTopics.length} topics</small>
+                                            </h3>
+                                            <div class="level-topics">
+                                                ${levelTopics.map(topic => `
+                                                    <button class="topic-chip ${activeTopic === topic.path ? "active" : ""}" data-topic="${topic.path}" type="button">
+                                                        <span>${topic.title}</span>
+                                                        <small>${topic.readingTime} · ${topic.difficulty}</small>
+                                                    </button>
+                                                `).join("")}
+                                            </div>
+                                        </section>
+                                    `;
+                                }).join("")}
+                            </div>
+                        </div>
+                    ` : ""}
+                </article>
+            `;
+        }).join("");
+    };
+
+    grid.addEventListener("click", event => {
+        const categoryButton = event.target.closest("[data-category]");
+        if (categoryButton) {
+            openCategory = openCategory === categoryButton.dataset.category
+                ? null
+                : categoryButton.dataset.category;
+            render();
+            return;
+        }
+
+        const topicButton = event.target.closest("[data-topic]");
+        if (topicButton) {
+            window.loadMarkdown(topicButton.dataset.topic);
+        }
+    });
+
+    window.roadmapUI = {
+        findTopic,
+        selectTopic(path) {
+            activeTopic = path || null;
+            const topic = path ? findTopic(path) : null;
+            if (topic) {
+                openCategory = topic.categoryId;
+            } else if (!path) {
+                openCategory = null;
+            }
+            render();
+        }
+    };
+
+    render();
+})();
